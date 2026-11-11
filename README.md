@@ -5,6 +5,8 @@ Camunda 8 agentic orchestration example: the AI Agent connector on STACKIT AI Mo
 
 A customer support agent for a fictional online shop. The agent looks up customers and orders with two job-worker tools and asks a human of the support team when it is unsure. A human reviews the drafted reply.
 
+![Support agent process: AI Agent sub-process with the tools Get customer, Get order status and Ask support team, followed by Review reply](docs/images/support-agent-process.png)
+
 ## Requirements
 
 - JDK 21, Maven 3.9
@@ -24,18 +26,15 @@ The token content is shown once. Copy `.env.example` to `.env` and set `STACKIT_
 
 Shared models in eu01 as of 2026-11-11. Specs from [Available shared models](https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/), prices from the STACKIT portal pricing information (EUR per 1M tokens). The model ID is the value for the `model` variable or `provider.openai.model.model` in the BPMN.
 
-| Model ID | Type | Tier | Context | Max output | Tool calling | Input €/1M | Output €/1M | Note |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `openai/gpt-oss-20b` | chat | Standard | 131K | 8192 | yes | 0.15 | 0.25 | default, verified |
-| `openai/gpt-oss-120b` | chat | Plus | 131K | 16384 | yes | 0.45 | 0.65 |  |
-| `cortecs/Llama-3.3-70B-Instruct-FP8-Dynamic` | chat | Plus | 128K | 4096 | yes | 0.45 | 0.65 |  |
-| `google/gemma-4-31B-it` | chat | Plus | 256K | 16384 | yes | 0.45 | 0.65 | text + image input |
-| `google/gemma-3-27b-it` | chat | Plus | – | – | – | 0.45 | 0.65 | served and priced, not in the models docs |
-| `Qwen/Qwen3.8-27B` | chat | Plus | 262K | 16384 | yes | 0.45 | 0.65 | text + image input |
-| `Qwen/Qwen3.6-27B` | chat | Plus | 262K | 16384 | yes | 0.45 | 0.65 | deprecated |
-| `Qwen/Qwen3-VL-235B-A22B-Instruct-FP8` | chat | Premium | 200K | 16384 | yes | 1.50 | 1.75 | text + image input |
-| `intfloat/e5-mistral-7b-instruct` | embedding | Standard | 4096 in | – | no | 0.02 | – | not usable for the agent |
-| `Qwen/Qwen3-VL-Embedding-8B` | embedding | Plus | 32000 in | – | no | – | – | not usable for the agent |
+| Model ID                                     | Type      | Tier     | Context  | Max output | Tool calling | Input €/1M | Output €/1M | Note                                      |
+|----------------------------------------------|-----------|----------|----------|------------|--------------|------------|-------------|-------------------------------------------|
+| `openai/gpt-oss-20b`                         | chat      | Standard | 131K     | 8192       | yes          | 0.15       | 0.25        | default, verified                         |
+| `openai/gpt-oss-120b`                        | chat      | Plus     | 131K     | 16384      | yes          | 0.45       | 0.65        |                                           |
+| `cortecs/Llama-3.3-70B-Instruct-FP8-Dynamic` | chat      | Plus     | 128K     | 4096       | yes          | 0.45       | 0.65        |                                           |
+| `google/gemma-4-31B-it`                      | chat      | Plus     | 256K     | 16384      | yes          | 0.45       | 0.65        | text + image input                        |
+| `google/gemma-3-27b-it`                      | chat      | Plus     | –        | –          | –            | 0.45       | 0.65        | served and priced, not in the models docs |
+| `Qwen/Qwen3.8-27B`                           | chat      | Plus     | 262K     | 16384      | yes          | 0.45       | 0.65        | text + image input                        |
+| `Qwen/Qwen3-VL-235B-A22B-Instruct-FP8`       | chat      | Premium  | 200K     | 16384      | yes          | 1.50       | 1.75        | text + image input                        |
 
 Billing is pay-per-token in units of 1M tokens per day: a day with fewer than 1M tokens is charged as a full 1M. Prices change; check the portal.
 
@@ -46,7 +45,7 @@ curl -s -H "Authorization: Bearer $STACKIT_AI_API_KEY" \
   https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1/models | jq -r '.data[].id'
 ```
 
-The agent needs a chat model with tool calling. Only `openai/gpt-oss-20b` is verified by this repo. STACKIT recommends retries for tool calling; the agent task has 3 retries.
+The agent needs a chat model with tool calling. STACKIT recommends retries for tool calling; the agent task has 3 retries.
 
 Switch the model per instance:
 
@@ -90,19 +89,19 @@ mvn verify
 
 ## Configure
 
-| Knob | Where | Default |
-| --- | --- | --- |
-| Endpoint | `provider.openai.backend.custom.endpoint` in `support-agent.bpmn` | `https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1` |
-| Model | process variable `model` | `openai/gpt-oss-20b` |
-| Secret name | `{{secrets.STACKIT_AI_API_KEY}}` in the BPMN, env var `SECRET_STACKIT_AI_API_KEY` on the connectors runtime | `.env` via `docker-compose.yaml` |
-| Max model calls | `data.limits.maxModelCalls` in `support-agent.bpmn` | 10 |
+Model provider of `Support_Agent` in Camunda Modeler (AI Agent Sub-process template):
+
+<img src="docs/images/modeler-model-provider.png" alt="Camunda Modeler model provider panel: OpenAI, Chat Completions, custom endpoint, API key from secrets" width="455">
+
+| Knob            | Where                                                                                                       | Default                                                           |
+|-----------------|-------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
+| Endpoint        | `provider.openai.backend.custom.endpoint` in `support-agent.bpmn`                                           | `https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1` |
+| Model           | process variable `model`                                                                                    | `openai/gpt-oss-20b`                                              |
+| Secret name     | `{{secrets.STACKIT_AI_API_KEY}}` in the BPMN, env var `SECRET_STACKIT_AI_API_KEY` on the connectors runtime | `.env` via `docker-compose.yaml`                                  |
+| Max model calls | `data.limits.maxModelCalls` in `support-agent.bpmn`                                                         | 10                                                                |
 
 ## Production notes
 
 - Provide secrets through STACKIT Secrets Manager, see https://github.com/itsmestefanjay/camunda-connectors-stackit-secrets.
 - The token is a bearer token. Rotate it before `ttlDuration` expires.
 - Model calls go only to STACKIT eu01; process data stays in your Camunda cluster.
-
-## License
-
-Apache-2.0, see [LICENSE](LICENSE).
