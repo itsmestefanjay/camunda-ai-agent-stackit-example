@@ -1,0 +1,68 @@
+# Local, ephemeral Camunda 8.10 stack for development. Not for production.
+services:
+  orchestration:
+    image: camunda/camunda:8.10.9
+    container_name: orchestration
+    ports:
+      - "8080:8080"
+      - "26500:26500"
+      - "9600:9600"
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/9600 && echo -e \"GET /actuator/health/status HTTP/1.1\r\nHost: localhost\r\n\r\n\" >&3 && head -n 1 <&3'"]
+      interval: 1s
+      retries: 30
+      start_period: 30s
+    configs:
+      - source: orchestration-config
+        target: /usr/local/camunda/config/application.yaml
+    networks:
+      - camunda
+
+  connectors:
+    image: camunda/connectors-bundle:8.10.5
+    container_name: connectors
+    ports:
+      - "8086:8080"
+    environment:
+      CAMUNDA_CLIENT_MODE: self-managed
+      CAMUNDA_CLIENT_GRPCADDRESS: http://orchestration:26500
+      CAMUNDA_CLIENT_RESTADDRESS: http://orchestration:8080
+      # Resolves {{secrets.STACKIT_AI_API_KEY}} in the BPMN
+      SECRET_STACKIT_AI_API_KEY: ${STACKIT_AI_API_KEY:?set STACKIT_AI_API_KEY in .env}
+    mem_limit: 512m
+    depends_on:
+      orchestration:
+        condition: service_healthy
+    networks:
+      - camunda
+
+networks:
+  camunda:
+    name: camunda
+
+configs:
+  orchestration-config:
+    content: |
+      camunda:
+        security:
+          authentication:
+            method: basic
+            unprotectedApi: true
+          authorizations:
+            enabled: false
+          initialization:
+            users:
+              - username: demo
+                password: demo
+                name: Demo User
+                email: demo@demo.com
+            defaultRoles.admin.users:
+              - demo
+        data:
+          secondary-storage:
+            type: rdbms
+            rdbms:
+              url: jdbc:h2:mem:camunda;DB_CLOSE_DELAY=-1
+              username: sa
+              password:

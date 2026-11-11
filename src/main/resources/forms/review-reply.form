@@ -1,0 +1,32 @@
+{
+  "components": [
+    {
+      "label": "Drafted reply",
+      "components": [
+        {
+          "text": "=reply",
+          "type": "text",
+          "layout": { "row": "Row_Reply", "columns": null },
+          "id": "Field_Reply"
+        }
+      ],
+      "showOutline": true,
+      "type": "group",
+      "layout": { "row": "Row_ReplyGroup", "columns": null },
+      "id": "Group_Reply"
+    },
+    {
+      "label": "Approve reply",
+      "type": "checkbox",
+      "layout": { "row": "Row_Approve", "columns": null },
+      "id": "Field_Approve",
+      "key": "approve"
+    }
+  ],
+  "type": "default",
+  "id": "review-reply",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.10.0",
+  "exporter": { "name": "Camunda Modeler", "version": "5.52.0" },
+  "schemaVersion": 19
+}
