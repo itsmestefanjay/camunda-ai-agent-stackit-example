@@ -22,22 +22,33 @@ The token content is shown once. Copy `.env.example` to `.env` and set `STACKIT_
 
 ## Models
 
-Available in eu01 as of 2026-11. Check `GET /v1/regions/eu01/models` for the current list.
+Available in eu01 as of 2026-11. The model ID is the value for the `model` variable or `provider.openai.model.model` in the BPMN. List the current IDs with:
 
-| Model | ID | Type | Tier |
+```sh
+curl -s -H "Authorization: Bearer $STACKIT_AI_API_KEY" \
+  https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1/models | jq -r '.data[].id'
+```
+
+| Model ID | Type | Tier | Note |
 | --- | --- | --- | --- |
-| openai/gpt-oss-20b (default) | 916c20c7-8339-4d35-8bc3-9b33a108886c | chat | standard |
-| Qwen/Qwen3.6-27B | adabd027-a940-447c-9946-0676aac69d34 | chat | plus |
-| cortecs/Llama-3.3-70B-Instruct-FP8-Dynamic | b6c5061d-3f07-4849-b60d-6d49dccdb7ec | chat | plus |
-| openai/gpt-oss-120b | df8224b7-3ef5-4ec6-ac18-180817edae41 | chat | plus |
-| Qwen/Qwen3.8-27B | ea8565ad-a3fc-4ba8-8572-7c8433efd0dd | chat | plus |
-| google/gemma-3-27b-it | f1bb6a5c-aa86-4fc7-8a70-ee53bfa38d62 | chat | plus |
-| google/gemma-4-31B-it | facc2f75-4ebb-4bd2-a8a8-1806e5337e93 | chat | plus |
-| Qwen/Qwen3-VL-235B-A22B-Instruct-FP8 | 7b8fa1ee-f102-49ab-8902-663cdcce0c1d | chat | premium |
-| intfloat/e5-mistral-7b-instruct | e629124b-accc-4e25-a1cc-dc57ac741e1d | embedding | standard |
-| Qwen/Qwen3-VL-Embedding-8B | 53c9b2ab-c0c5-4810-b5e0-9bd5b1357fae | embedding | plus |
+| `openai/gpt-oss-20b` | chat | standard | default, verified |
+| `Qwen/Qwen3.6-27B` | chat | plus |  |
+| `cortecs/Llama-3.3-70B-Instruct-FP8-Dynamic` | chat | plus |  |
+| `openai/gpt-oss-120b` | chat | plus |  |
+| `Qwen/Qwen3.8-27B` | chat | plus |  |
+| `google/gemma-3-27b-it` | chat | plus |  |
+| `google/gemma-4-31B-it` | chat | plus |  |
+| `Qwen/Qwen3-VL-235B-A22B-Instruct-FP8` | chat | premium |  |
+| `intfloat/e5-mistral-7b-instruct` | embedding | standard | not usable for the agent |
+| `Qwen/Qwen3-VL-Embedding-8B` | embedding | plus | not usable for the agent |
 
-The agent needs a chat model with tool calling. Only `openai/gpt-oss-20b` is verified by this repo. Embedding models cannot be used. Switch the model per instance with the `model` variable.
+The agent needs a chat model with tool calling. Only `openai/gpt-oss-20b` is verified by this repo.
+
+Switch the model per instance:
+
+```json
+{"processDefinitionId":"stackit-support-agent","variables":{"request":"Where is my order 4711?","model":"openai/gpt-oss-120b"}}
+```
 
 ## Run
 
