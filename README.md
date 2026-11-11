@@ -1,11 +1,11 @@
 # camunda-ai-agent-stackit-example
 Camunda 8 agentic orchestration example: the AI Agent connector on STACKIT AI Model Serving, the OpenAI-compatible LLM service of the German sovereign cloud. A BPMN process, element templates and a Spring Boot worker show how to run AI agents in Camunda while prompts and process data stay in Germany. GDPR-friendly, Java, ready to fork.
 
-> Use at your own risk. Not affiliated with Camunda or STACKIT.
-
 A customer support agent for a fictional online shop. The agent looks up customers and orders with two job-worker tools and asks a human of the support team when it is unsure. A human reviews the drafted reply.
 
-![Support agent process: AI Agent sub-process with the tools Get customer, Get order status and Ask support team, followed by Review reply](docs/images/support-agent-process.png)
+<p align="center">
+  <img src="docs/images/support-agent-process.png" alt="Support agent process: AI Agent sub-process with the tools Get customer, Get order status and Ask support team, followed by Review reply" width="1000">
+</p>
 
 ## Requirements
 
@@ -91,7 +91,9 @@ mvn verify
 
 Model provider of `Support_Agent` in Camunda Modeler (AI Agent Sub-process template):
 
-<img src="docs/images/modeler-model-provider.png" alt="Camunda Modeler model provider panel: OpenAI, Chat Completions, custom endpoint, API key from secrets" width="455">
+<p align="center">
+  <img src="docs/images/modeler-model-provider.png" alt="Camunda Modeler model provider panel: OpenAI, Chat Completions, custom endpoint, API key from secrets" width="455">
+</p>
 
 | Knob            | Where                                                                                                       | Default                                                           |
 |-----------------|-------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
