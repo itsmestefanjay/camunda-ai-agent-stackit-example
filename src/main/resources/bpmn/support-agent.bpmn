@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_SupportAgent" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.52.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.10.0">
+  <bpmn:process id="stackit-support-agent" name="STACKIT Support Agent" isExecutable="true">
+    <bpmn:startEvent id="Start_Request" name="Customer request">
+      <bpmn:outgoing>Flow_Start_Agent</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:adHocSubProcess id="Support_Agent" name="Support Agent" zeebe:modelerTemplate="io.camunda.connectors.agenticai.ai-agent-subprocess.v2" zeebe:modelerTemplateVersion="1">
+      <bpmn:documentation>Answers customer requests about orders, using the tools below.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:adHoc outputCollection="toolCallResults" outputElement="={&#10;  id: toolCall._meta.id,&#10;  name: toolCall._meta.name,&#10;  content: toolCallResult,&#10;  completedAt: now()&#10;}" />
+        <zeebe:taskDefinition type="io.camunda.agenticai:aiagent:subprocess:2" retries="3" />
+        <zeebe:ioMapping>
+          <zeebe:input source="openai" target="provider.type" />
+          <zeebe:input source="completions" target="provider.openai.api.type" />
+          <zeebe:input source="custom" target="provider.openai.backend.type" />
+          <zeebe:input source="https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1" target="provider.openai.backend.custom.endpoint" />
+          <zeebe:input source="apiKey" target="provider.openai.backend.custom.authentication.type" />
+          <zeebe:input source="{{secrets.STACKIT_AI_API_KEY}}" target="provider.openai.backend.custom.authentication.apiKey" />
+          <zeebe:input source="=if is defined(model) then model else &#34;openai/gpt-oss-20b&#34;" target="provider.openai.model.model" />
+          <zeebe:input source="=&#34;You are a customer support agent of an online shop. Use the available tools to look up customers and orders. Never invent order or customer data. If you are unsure or a tool cannot answer, ask the support team. Answer in the language of the customer, briefly and politely.&#34;" target="data.systemPrompt.prompt" />
+          <zeebe:input source="=request" target="data.userPrompt.prompt" />
+          <zeebe:input source="in-process" target="data.memory.storage.type" />
+          <zeebe:input source="=20" target="data.memory.contextWindowSize" />
+          <zeebe:input source="=10" target="data.limits.maxModelCalls" />
+          <zeebe:input source="WAIT_FOR_TOOL_CALL_RESULTS" target="data.events.behavior" />
+          <zeebe:input source="text" target="data.response.format.type" />
+          <zeebe:input source="=false" target="data.response.includeAssistantMessage" />
+          <zeebe:input source="=false" target="data.response.includeAgentContext" />
+          <zeebe:input target="agent" />
+          <zeebe:output source="=agent" target="agent" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="elementTemplateVersion" value="1" />
+          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.agenticai.ai-agent-subprocess.v2" />
+          <zeebe:header key="retryBackoff" value="PT30S" />
+        </zeebe:taskHeaders>
+        <zeebe:properties>
+          <zeebe:property name="io.camunda.agenticai.toolContainer" value="true" />
+        </zeebe:properties>
+        <zeebe:agentDefinition agentType="aiAgentSubProcess" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Start_Agent</bpmn:incoming>
+      <bpmn:outgoing>Flow_Agent_Review</bpmn:outgoing>
+      <bpmn:serviceTask id="Get_Customer" name="Get customer">
+        <bpmn:documentation>Looks up a customer profile (name, email, tier) by customer id, for example C-1001.</bpmn:documentation>
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="get-customer" />
+          <zeebe:ioMapping>
+            <zeebe:input source="=fromAi(toolCall.customerId, &#34;The customer id, for example C-1001&#34;)" target="customerId" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="Get_Order_Status" name="Get order status">
+        <bpmn:documentation>Returns the status, carrier and estimated delivery date of an order by order id, for example 4711.</bpmn:documentation>
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="get-order-status" />
+          <zeebe:ioMapping>
+            <zeebe:input source="=fromAi(toolCall.orderId, &#34;The order id, for example 4711&#34;)" target="orderId" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+      </bpmn:serviceTask>
+      <bpmn:userTask id="Ask_Support_Team" name="Ask support team">
+        <bpmn:documentation>Asks a human colleague of the support team when the answer is unknown or a decision is needed. Returns the colleague's answer.</bpmn:documentation>
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="ask-support-team" />
+          <zeebe:ioMapping>
+            <zeebe:input source="=fromAi(toolCall.question, &#34;The question for the support team, with all relevant context&#34;)" target="question" />
+            <zeebe:output source="={&#10;  answer: answer&#10;}" target="toolCallResult" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+    </bpmn:adHocSubProcess>
+    <bpmn:userTask id="Review_Reply" name="Review reply">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:formDefinition formId="review-reply" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=agent.responseText" target="reply" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Agent_Review</bpmn:incoming>
+      <bpmn:outgoing>Flow_Review_End</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_Done" name="Reply reviewed">
+      <bpmn:incoming>Flow_Review_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start_Agent" sourceRef="Start_Request" targetRef="Support_Agent" />
+    <bpmn:sequenceFlow id="Flow_Agent_Review" sourceRef="Support_Agent" targetRef="Review_Reply" />
+    <bpmn:sequenceFlow id="Flow_Review_End" sourceRef="Review_Reply" targetRef="End_Done" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="stackit-support-agent">
+      <bpmndi:BPMNShape id="Start_Request_di" bpmnElement="Start_Request">
+        <dc:Bounds x="152" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="130" y="245" width="80" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Support_Agent_di" bpmnElement="Support_Agent" isExpanded="true">
+        <dc:Bounds x="250" y="120" width="500" height="260" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Get_Customer_di" bpmnElement="Get_Customer">
+        <dc:Bounds x="280" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Get_Order_Status_di" bpmnElement="Get_Order_Status">
+        <dc:Bounds x="430" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Ask_Support_Team_di" bpmnElement="Ask_Support_Team">
+        <dc:Bounds x="580" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Review_Reply_di" bpmnElement="Review_Reply">
+        <dc:Bounds x="830" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Done_di" bpmnElement="End_Done">
+        <dc:Bounds x="992" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="971" y="245" width="79" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Start_Agent_di" bpmnElement="Flow_Start_Agent">
+        <di:waypoint x="188" y="220" />
+        <di:waypoint x="250" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Agent_Review_di" bpmnElement="Flow_Agent_Review">
+        <di:waypoint x="750" y="220" />
+        <di:waypoint x="830" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Review_End_di" bpmnElement="Flow_Review_End">
+        <di:waypoint x="930" y="220" />
+        <di:waypoint x="992" y="220" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
