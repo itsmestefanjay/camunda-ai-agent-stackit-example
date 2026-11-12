@@ -29,8 +29,8 @@ information (EUR per 1M tokens). The model ID is the value for the `model` varia
 
 | Model ID                                     | Type      | Tier     | Context  | Max output | Tool calling | Input €/1M | Output €/1M | Note                                      |
 |----------------------------------------------|-----------|----------|----------|------------|--------------|------------|-------------|-------------------------------------------|
-| `openai/gpt-oss-20b`                         | chat      | Standard | 131K     | 8192       | yes          | 0.15       | 0.25        | default, verified                         |
-| `openai/gpt-oss-120b`                        | chat      | Plus     | 131K     | 16384      | yes          | 0.45       | 0.65        |                                           |
+| `openai/gpt-oss-20b`                         | chat      | Standard | 131K     | 8192       | yes          | 0.15       | 0.25        | verified                                  |
+| `openai/gpt-oss-120b`                        | chat      | Plus     | 131K     | 16384      | yes          | 0.45       | 0.65        | default                                   |
 | `cortecs/Llama-3.3-70B-Instruct-FP8-Dynamic` | chat      | Plus     | 128K     | 4096       | yes          | 0.45       | 0.65        |                                           |
 | `google/gemma-4-31B-it`                      | chat      | Plus     | 256K     | 16384      | yes          | 0.45       | 0.65        | text + image input                        |
 | `google/gemma-3-27b-it`                      | chat      | Plus     | –        | –          | –            | 0.45       | 0.65        | served and priced, not in the models docs |
@@ -51,7 +51,7 @@ The agent needs a chat model with tool calling. STACKIT recommends retries for t
 Switch the model per instance:
 
 ```json
-{"processDefinitionId":"stackit-support-agent","variables":{"request":"Where is my order 4711?","model":"openai/gpt-oss-120b"}}
+{"processDefinitionId":"stackit-support-agent","variables":{"request":"Where is my order 4711?","model":"openai/gpt-oss-20b"}}
 ```
 
 ## Run
@@ -101,12 +101,12 @@ The support team answer is a CPT conditional behavior that completes `Ask_Suppor
 
 Two models take part in each test:
 
-| Role  | Runs where                                     | Model                                                                      | Configured in                                                               |
-|-------|------------------------------------------------|----------------------------------------------------------------------------|-----------------------------------------------------------------------------|
-| Agent | AI Agent connector in the connectors container | `openai/gpt-oss-20b`, the BPMN default (the tests set no `model` variable) | `provider.openai.model.model` in `support-agent.bpmn`                       |
-| Judge | test JVM, Camunda Process Test                 | `openai/gpt-oss-120b`, override with `JUDGE_MODEL`                         | `camunda.process-test.judge` in `src/test/resources/application-judge.yaml` |
+| Role  | Runs where                                     | Model                                                                       | Configured in                                                               |
+|-------|------------------------------------------------|-----------------------------------------------------------------------------|-----------------------------------------------------------------------------|
+| Agent | AI Agent connector in the connectors container | `openai/gpt-oss-120b`, the BPMN default (the tests set no `model` variable) | `provider.openai.model.model` in `support-agent.bpmn`                       |
+| Judge | test JVM, Camunda Process Test                 | `openai/gpt-oss-20b`, override with `JUDGE_MODEL`                           | `camunda.process-test.judge` in `src/test/resources/application-judge.yaml` |
 
-Both call STACKIT with the same `STACKIT_AI_API_KEY`. A stronger judge than agent makes the grading more reliable.
+Both call STACKIT with the same `STACKIT_AI_API_KEY`.
 
 1. **Prerequisites.** Docker running, JDK 21, Maven 3.9, and `.env` with `STACKIT_AI_API_KEY` (see [Get a token](#get-a-token)).
 2. **Dependency.** `camunda-process-test-spring-boot-4` (test scope) brings Camunda Process Test, Testcontainers and the LangChain4j judge adapter. Nothing else to add.
@@ -150,7 +150,7 @@ on:
     inputs:
       judge_model:
         description: Judge model
-        default: openai/gpt-oss-120b
+        default: openai/gpt-oss-20b
   schedule:
     - cron: "0 3 * * 1-5"
   pull_request:
@@ -185,7 +185,7 @@ jobs:
       - run: mvn -B -ntp -Pjudge verify
         env:
           STACKIT_AI_API_KEY: ${{ secrets.STACKIT_AI_API_KEY }}
-          JUDGE_MODEL: ${{ inputs.judge_model || 'openai/gpt-oss-120b' }}
+          JUDGE_MODEL: ${{ inputs.judge_model || 'openai/gpt-oss-20b' }}
       - if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -223,7 +223,7 @@ Model provider of `Support_Agent` in Camunda Modeler (AI Agent Sub-process templ
 | Knob            | Where                                                                                                       | Default                                                           |
 |-----------------|-------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
 | Endpoint        | `provider.openai.backend.custom.endpoint` in `support-agent.bpmn`                                           | `https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1` |
-| Model           | process variable `model`                                                                                    | `openai/gpt-oss-20b`                                              |
+| Model           | process variable `model`                                                                                    | `openai/gpt-oss-120b`                                             |
 | Secret name     | `{{secrets.STACKIT_AI_API_KEY}}` in the BPMN, env var `SECRET_STACKIT_AI_API_KEY` on the connectors runtime | `.env` via `docker-compose.yaml`                                  |
 | Max model calls | `data.limits.maxModelCalls` in `support-agent.bpmn`                                                         | 10                                                                |
 

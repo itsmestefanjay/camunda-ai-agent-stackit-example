@@ -14,7 +14,6 @@ camunda:
         provider: openai-compatible
         base-url: https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1
         api-key: ${STACKIT_AI_API_KEY}
-        # a stronger model than the agent default grades the agent
-        model: ${JUDGE_MODEL:openai/gpt-oss-120b}
+        model: ${JUDGE_MODEL:openai/gpt-oss-20b}
         temperature: 0.0
         timeout: PT60S
