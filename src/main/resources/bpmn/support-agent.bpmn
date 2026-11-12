@@ -16,7 +16,7 @@
           <zeebe:input source="https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1" target="provider.openai.backend.custom.endpoint" />
           <zeebe:input source="apiKey" target="provider.openai.backend.custom.authentication.type" />
           <zeebe:input source="{{secrets.STACKIT_AI_API_KEY}}" target="provider.openai.backend.custom.authentication.apiKey" />
-          <zeebe:input source="=if is defined(model) then model else &#34;openai/gpt-oss-20b&#34;" target="provider.openai.model.model" />
+          <zeebe:input source="=if is defined(model) then model else &#34;openai/gpt-oss-120b&#34;" target="provider.openai.model.model" />
           <zeebe:input source="=&#34;You are a customer support agent of an online shop. Use the available tools to look up customers and orders. Never invent order or customer data. If you are unsure or a tool cannot answer, ask the support team. Answer in the language of the customer, briefly and politely.&#34;" target="data.systemPrompt.prompt" />
           <zeebe:input source="=request" target="data.userPrompt.prompt" />
           <zeebe:input source="in-process" target="data.memory.storage.type" />
