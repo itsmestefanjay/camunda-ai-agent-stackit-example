@@ -1,0 +1,20 @@
+camunda:
+  process-test:
+    camunda-docker-image-version: 8.10.9
+    connectors-enabled: true
+    connectors-docker-image-name: camunda/connectors-bundle
+    connectors-docker-image-version: 8.10.5
+    connectors-secrets:
+      STACKIT_AI_API_KEY: ${STACKIT_AI_API_KEY}
+    assertion:
+      timeout: PT2M
+    judge:
+      threshold: 0.75
+      chat-model:
+        provider: openai-compatible
+        base-url: https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1
+        api-key: ${STACKIT_AI_API_KEY}
+        # a stronger model than the agent default grades the agent
+        model: ${JUDGE_MODEL:openai/gpt-oss-120b}
+        temperature: 0.0
+        timeout: PT60S

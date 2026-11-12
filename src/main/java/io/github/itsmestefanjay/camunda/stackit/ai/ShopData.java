@@ -3,13 +3,10 @@ package io.github.itsmestefanjay.camunda.stackit.ai;
 import java.util.List;
 import java.util.Optional;
 
-/** In-memory sample data of a fictional online shop. */
 public final class ShopData {
 
-  /** A shop customer. */
   public record Customer(String id, String name, String email, String tier) {}
 
-  /** A customer order with its shipping state. */
   public record Order(String id, String customerId, String status, String carrier, String eta) {}
 
   private static final List<Customer> CUSTOMERS = List.of(
@@ -24,12 +21,10 @@ public final class ShopData {
 
   private ShopData() {}
 
-  /** Customer by id. */
   public static Optional<Customer> findCustomer(String customerId) {
     return CUSTOMERS.stream().filter(customer -> customer.id().equals(customerId)).findFirst();
   }
 
-  /** Order by id. */
   public static Optional<Order> findOrder(String orderId) {
     return ORDERS.stream().filter(order -> order.id().equals(orderId)).findFirst();
   }
