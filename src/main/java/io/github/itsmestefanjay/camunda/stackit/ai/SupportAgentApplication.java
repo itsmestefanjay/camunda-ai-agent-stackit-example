@@ -4,7 +4,6 @@ import io.camunda.client.annotation.Deployment;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-/** Deploys the support agent process and its forms, and hosts the tool job workers. */
 @SpringBootApplication
 @Deployment(resources = {"classpath*:/bpmn/*.bpmn", "classpath*:/forms/*.form"})
 public class SupportAgentApplication {
